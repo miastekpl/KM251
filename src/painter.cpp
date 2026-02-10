@@ -169,6 +169,13 @@ void PaintProcess::resetStats()
 
 void PaintProcess::_updateGuns()
 {
+    // Zabezpieczenie: poniżej MIN_PAINT_SPEED_KMH pistolety nie otworzą się
+    float speed = wheelEncoder.getSpeedKMH();
+    if (speed < MIN_PAINT_SPEED_KMH) {
+        gunController.allOff();
+        return;
+    }
+
     uint32_t pos_mm = wheelEncoder.getDistanceMM();
 
     // Wzorzec osi jezdni

@@ -2,7 +2,7 @@
  * =============================================================
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * Plik konfiguracyjny - definicje pinów i parametrów
- * Wersja: 1.0.2
+ * Wersja: 1.1.0
  * =============================================================
  */
 
@@ -15,9 +15,9 @@
 // WERSJA FIRMWARE
 // =============================================================
 #define FW_VERSION_MAJOR    1
-#define FW_VERSION_MINOR    0
-#define FW_VERSION_PATCH    2
-#define FW_VERSION_STRING   "1.0.2"
+#define FW_VERSION_MINOR    1
+#define FW_VERSION_PATCH    0
+#define FW_VERSION_STRING   "1.1.0"
 #define FW_BUILD_DATE       __DATE__
 #define FW_BUILD_TIME       __TIME__
 #define FW_DEVICE_NAME      "KM251"
@@ -95,6 +95,11 @@
 #define ENC_DEFAULT_PULSES_PER_M  1000   // Domyślna wartość impulsów/metr
 
 // =============================================================
+// BEZPIECZEŃSTWO - MINIMALNA PRĘDKOŚĆ MALOWANIA
+// =============================================================
+#define MIN_PAINT_SPEED_KMH  3.0f  // Pistolety nie otworzą się poniżej 3 km/h
+
+// =============================================================
 // PARAMETRY WYŚWIETLACZA
 // =============================================================
 #define TFT_ROTATION         1      // 1 = landscape 320x240
@@ -104,23 +109,28 @@
 #define TFT_BL_DEFAULT       200
 
 // =============================================================
-// KOLORY GUI (RGB565)
+// KOLORY GUI (RGB565) - CZARNE TŁO
 // =============================================================
-#define COLOR_BG             0x1082
-#define COLOR_BG_HEADER      0x18C3
-#define COLOR_BG_MENU        0x2104
+#define COLOR_BG             0x0000   // Czarne tło
+#define COLOR_BG_HEADER      0x0000
+#define COLOR_BG_MENU        0x10A2
 #define COLOR_BG_SELECTED    0x03BF
 #define COLOR_BG_ACTIVE      0x07E0
 #define COLOR_BG_WARNING     0xFBE0
 #define COLOR_BG_ERROR       0xF800
-#define COLOR_BG_DISABLED    0x4208
+#define COLOR_BG_DISABLED    0x2104
 
-#define COLOR_TEXT_PRIMARY   0xFFFF
-#define COLOR_TEXT_SECONDARY 0xB5B6
-#define COLOR_TEXT_ACCENT    0x07FF
-#define COLOR_TEXT_SUCCESS   0x07E0
-#define COLOR_TEXT_WARNING   0xFFE0
-#define COLOR_TEXT_ERROR     0xF800
+#define COLOR_TEXT_PRIMARY   0xFFFF   // Biały
+#define COLOR_TEXT_SECONDARY 0xB5B6   // Szary
+#define COLOR_TEXT_ACCENT    0x07FF   // Cyjan
+#define COLOR_TEXT_SUCCESS   0x07E0   // Zielony
+#define COLOR_TEXT_WARNING   0xFFE0   // Żółty
+#define COLOR_TEXT_ERROR     0xF800   // Czerwony
+
+#define COLOR_GUN_IDLE       0x2104   // Ciemny - pistolet nieaktywny
+#define COLOR_GUN_PATTERN    0xFFE0   // Żółty - w wybranym wzorcu
+#define COLOR_GUN_PAINTING   0x07E0   // Zielony - maluje
+#define COLOR_GUN_PAUSED     0xFFE0   // Żółty (miganie) - pauza
 
 #define COLOR_BORDER         0x4A49
 #define COLOR_PROGRESS_BG    0x2104
@@ -129,17 +139,21 @@
 // =============================================================
 // PARAMETRY GUI
 // =============================================================
-#define HEADER_HEIGHT        30
-#define STATUS_BAR_H         24
-#define MENU_ITEM_HEIGHT     28
-#define MENU_VISIBLE         6
+#define HEADER_HEIGHT        0       // Brak nagłówka - pełnoekranowy layout
+#define STATUS_BAR_H         0
+#define MENU_ITEM_HEIGHT     32
+#define MENU_VISIBLE         5
 #define GUI_REFRESH_MS       50
+#define GUN_BOX_W            48
+#define GUN_BOX_H            30
+#define GUN_BOX_GAP          5
+#define GUN_BOX_Y            200     // Y startowy prostokątów pistoletów
 
 // =============================================================
 // WIFI - Access Point
 // =============================================================
-#define WIFI_AP_SSID         "KM251-Malowarka"
-#define WIFI_AP_PASS         "km251admin"
+#define WIFI_AP_SSID         "Trassar"
+#define WIFI_AP_PASS         "12345678"
 #define WIFI_AP_CHANNEL      6
 #define WEB_SERVER_PORT      80
 

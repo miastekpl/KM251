@@ -2,6 +2,49 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.1.0] - 2026-02-10
+
+### Dodano - Nowy interfejs HUD
+- Czarne tło, duże czytelne napisy
+- Prawy górny róg: aktualna prędkość (czcionka 7-segment 48px)
+- Poniżej prędkości: powierzchnia malowania (m²)
+- Lewy górny róg: wybrany wzorzec malowania + krawędź
+- 6 prostokątów wizualizujących pistoletów na dole ekranu:
+  - Żółty = pistolet użyty we wzorcu
+  - Zielony = pistolet aktywnie maluje
+  - Żółte miganie = pauza (pistolety wstrzymane)
+  - Ciemny = pistolet nieaktywny
+
+### Dodano - Menu serwisowe (STOP długi 1s)
+- **Kalibracja enkodera**: START → jedź 10m → START → system oblicza impulsy/mm
+- **Pomiar dystansu**: START = start pomiaru, START = pauza, STOP = reset
+- **Raporty**: podsumowanie łącznego dystansu, powierzchni, stan karty SD
+- **Czyszczenie dysz**: wybierz wzorzec → trzymaj START → dysze otwarte tak długo jak trzymany przycisk
+
+### Dodano - Zabezpieczenie prędkości
+- Minimalna prędkość malowania: 3 km/h
+- Poniżej 3 km/h pistolety automatycznie się zamykają
+- Ostrzeżenie na wyświetlaczu i panelu WWW
+- Wyjątek: tryb czyszczenia dysz (pistoletami można sterować przy dowolnej prędkości)
+
+### Dodano - Panel WWW dla smartfona
+- WiFi AP: SSID="Trassar", hasło="12345678"
+- Responsywny interfejs zoptymalizowany pod ekran telefonu
+- Duży wyświetlacz prędkości na górze
+- Wizualizacja pistoletów z kolorami (zielony/żółty/ciemny)
+- Przyciski sterowania: START, PAUZA, STOP, WZNÓW, ODWRÓĆ P-3
+- Wybór wzorców osi jezdni i krawędzi
+- Kalibracja enkodera przez przeglądarkę
+- Status SD i kalibracji w API JSON
+
+### Zmieniono
+- Kompletnie przepisany system menu (menu.h/cpp) — nowa architektura HUD
+- Usunięto stary system menu z wieloma podmenu
+- Nawigacja uproszczona: Selector = zmień wzorzec, STOP(dl) = serwis
+- Logowanie sesji na kartę SD przy zatrzymaniu malowania
+- Zapis statystyk do NVS przy zakończeniu sesji
+- Panel WWW: dodano maskę wzorca pistoletów w JSON API
+
 ## [1.0.2] - 2026-02-10
 
 ### Zmieniono

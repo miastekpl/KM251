@@ -54,6 +54,9 @@ public:
     void drawGunIndicator(int x, int y, uint8_t gunIndex, bool active);
     void drawSplashScreen();
 
+    // Nowy GUI v1.1 - prostokąty pistoletów
+    void drawGunBox(int x, int y, uint8_t gunIndex, uint16_t bgColor);
+
     // Dostęp do TFT
     TFT_eSPI& tft() { return _tft; }
     int16_t width();

@@ -53,29 +53,28 @@ int16_t DisplayManager::height()
 
 void DisplayManager::drawHeader(const char* title, uint16_t color)
 {
-    _tft.fillRect(0, 0, width(), HEADER_HEIGHT, color);
+    _tft.fillRect(0, 0, width(), 28, color);
     _tft.setTextColor(COLOR_TEXT_PRIMARY, color);
-    _tft.setTextDatum(ML_DATUM);
+    _tft.setTextDatum(MC_DATUM);
     _tft.setFreeFont(nullptr);
     _tft.setTextSize(1);
-    _tft.drawString(title, 8, HEADER_HEIGHT / 2, 2);
-    _tft.drawFastHLine(0, HEADER_HEIGHT, width(), COLOR_BORDER);
+    _tft.drawString(title, width() / 2, 14, 4);
 }
 
 void DisplayManager::drawStatusBar(const char* status, StatusIcon icon)
 {
-    int y = height() - STATUS_BAR_H;
-    _tft.fillRect(0, y, width(), STATUS_BAR_H, COLOR_BG_HEADER);
+    int y = height() - 18;
+    _tft.fillRect(0, y, width(), 18, COLOR_BG);
     _tft.drawFastHLine(0, y, width(), COLOR_BORDER);
 
     if (icon != StatusIcon::NONE) {
-        drawIcon(4, y + 4, icon);
+        drawIcon(4, y + 2, icon);
     }
 
-    int textX = (icon != StatusIcon::NONE) ? 24 : 8;
-    _tft.setTextColor(COLOR_TEXT_SECONDARY, COLOR_BG_HEADER);
+    int textX = (icon != StatusIcon::NONE) ? 24 : 4;
+    _tft.setTextColor(COLOR_TEXT_SECONDARY, COLOR_BG);
     _tft.setTextDatum(ML_DATUM);
-    _tft.drawString(status, textX, y + STATUS_BAR_H / 2, 1);
+    _tft.drawString(status, textX, y + 9, 1);
 }
 
 void DisplayManager::drawProgressBar(int x, int y, int w, int h, float progress,
@@ -200,6 +199,23 @@ void DisplayManager::drawGunIndicator(int x, int y, uint8_t gunIndex, bool activ
     _tft.setTextColor(txtCol, bgCol);
     _tft.setTextDatum(MC_DATUM);
     _tft.drawString(label, x + 18, y + 9, 1);
+}
+
+// =============================================================
+// Nowy GUI v1.1 - prostokąt pistoletu (48x30)
+// =============================================================
+void DisplayManager::drawGunBox(int x, int y, uint8_t gunIndex, uint16_t bgColor)
+{
+    char label[4];
+    snprintf(label, sizeof(label), "P%d", gunIndex + 1);
+
+    _tft.fillRoundRect(x, y, GUN_BOX_W, GUN_BOX_H, 4, bgColor);
+    _tft.drawRoundRect(x, y, GUN_BOX_W, GUN_BOX_H, 4, COLOR_BORDER);
+
+    uint16_t txtCol = (bgColor == COLOR_GUN_IDLE) ? COLOR_TEXT_SECONDARY : TFT_BLACK;
+    _tft.setTextColor(txtCol, bgColor);
+    _tft.setTextDatum(MC_DATUM);
+    _tft.drawString(label, x + GUN_BOX_W / 2, y + GUN_BOX_H / 2, 2);
 }
 
 void DisplayManager::drawSplashScreen()

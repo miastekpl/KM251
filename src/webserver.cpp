@@ -3,6 +3,7 @@
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * Implementacja serwera WWW (WiFi AP)
  * Serwer HTTP: ESP-IDF natywny (esp_http_server)
+ * WiFi AP: Trassar / 12345678
  * Dostęp: http://192.168.4.1
  * =============================================================
  */
@@ -16,6 +17,7 @@
 #include "painter.h"
 #include "encoder.h"
 #include "storage.h"
+#include "sdlogger.h"
 
 KM251WebServer webServer;
 
@@ -26,7 +28,6 @@ static httpd_handle_t httpServer = NULL;
 // =============================================================
 static String generateMainPage();
 static String generateStatusJSON();
-static String generateCalibrationPage();
 
 // =============================================================
 // Helpers
@@ -160,11 +161,6 @@ static esp_err_t handleStop(httpd_req_t *req)
     return sendJSONOk(req);
 }
 
-static esp_err_t handleCalibrationPage(httpd_req_t *req)
-{
-    return sendHTML(req, generateCalibrationPage());
-}
-
 static esp_err_t handleCalStart(httpd_req_t *req)
 {
     wheelEncoder.startCalibration();
@@ -253,7 +249,6 @@ void KM251WebServer::_setupRoutes()
 
     // Strony HTML
     registerURI(httpServer, "/",             HTTP_GET,  handleRoot);
-    registerURI(httpServer, "/calibration",  HTTP_GET,  handleCalibrationPage);
 
     // API - status
     registerURI(httpServer, "/api/status",   HTTP_GET,  handleStatus);
@@ -275,102 +270,124 @@ void KM251WebServer::_setupRoutes()
     registerURI(httpServer, "/api/cal/end",   HTTP_POST, handleCalEnd);
     registerURI(httpServer, "/api/cal/save",  HTTP_POST, handleCalSave);
 
-    Serial.printf("[WEB] Zarejestrowano 15 endpointow HTTP\n");
+    Serial.printf("[WEB] Zarejestrowano 14 endpointow HTTP\n");
 }
 
 // =============================================================
-// Generowanie strony HTML
+// Strona glowna - panel sterowania smartfon
 // =============================================================
 static String generateMainPage()
 {
     String html = R"rawhtml(<!DOCTYPE html><html lang="pl"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KM251 Malowarka</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>KM251 Trassar</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#1a1a2e;color:#eee;padding:10px}
-h1{text-align:center;color:#0ff;margin:10px 0;font-size:1.4em}
-h2{color:#0ff;font-size:1.1em;margin:10px 0 5px}
-.card{background:#16213e;border-radius:8px;padding:12px;margin:8px 0}
-.status{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat-item{background:#0f3460;border-radius:6px;padding:8px;text-align:center}
-.stat-label{font-size:0.7em;color:#aaa}
-.stat-value{font-size:1.3em;font-weight:bold;color:#0ff}
-.guns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0}
-.gun{padding:6px 12px;border-radius:6px;font-weight:bold;font-size:0.9em;min-width:44px;text-align:center}
-.gun-on{background:#0f0;color:#000}.gun-off{background:#333;color:#666}
-.patterns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.pat-btn{padding:8px;border:2px solid #333;border-radius:6px;background:#0f3460;color:#eee;
-font-size:0.85em;cursor:pointer;text-align:center;transition:0.2s}
-.pat-btn:hover{border-color:#0ff;background:#1a4080}
-.pat-btn.active{border-color:#0f0;background:#0a3000;color:#0f0}
-.ctrl-btns{display:flex;gap:8px;margin:8px 0}
-.btn{flex:1;padding:10px;border:none;border-radius:6px;font-size:1em;font-weight:bold;cursor:pointer}
-.btn-start{background:#0a0;color:#fff}.btn-pause{background:#fa0;color:#000}
-.btn-stop{background:#a00;color:#fff}.btn-reverse{background:#06a;color:#fff}
-.btn:hover{opacity:0.85}
+body{font-family:-apple-system,Arial,sans-serif;background:#111;color:#eee;padding:8px;max-width:480px;margin:0 auto}
+h1{text-align:center;color:#0ff;margin:8px 0;font-size:1.3em}
+h2{color:#0ff;font-size:1em;margin:8px 0 4px}
+.card{background:#1a1a2e;border-radius:10px;padding:10px;margin:6px 0}
+.status{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.si{background:#0f3460;border-radius:8px;padding:8px;text-align:center}
+.si.wide{grid-column:1/3}
+.sl{font-size:0.65em;color:#999;text-transform:uppercase}
+.sv{font-size:1.5em;font-weight:bold;color:#0ff}
+.sv.big{font-size:2.2em}
+.guns{display:flex;gap:4px;justify-content:center;margin:6px 0}
+.gun{width:46px;height:36px;border-radius:6px;font-weight:bold;font-size:0.85em;
+display:flex;align-items:center;justify-content:center;border:2px solid #333}
+.gun-on{background:#0c0;color:#000;border-color:#0f0}
+.gun-off{background:#222;color:#555;border-color:#333}
+.gun-pat{background:#cc0;color:#000;border-color:#ff0}
+.pats{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pb{padding:7px 4px;border:2px solid #333;border-radius:8px;background:#0f3460;color:#ddd;
+font-size:0.8em;cursor:pointer;text-align:center;transition:0.15s;-webkit-tap-highlight-color:transparent}
+.pb:active{transform:scale(0.95)}
+.pb.act{border-color:#0f0;background:#0a3000;color:#0f0}
+.cb{display:flex;gap:6px;margin:6px 0}
+.btn{flex:1;padding:12px 4px;border:none;border-radius:8px;font-size:1em;font-weight:bold;
+cursor:pointer;-webkit-tap-highlight-color:transparent;transition:0.15s}
+.btn:active{transform:scale(0.95)}
+.b-start{background:#090;color:#fff}
+.b-pause{background:#e90;color:#000}
+.b-stop{background:#b00;color:#fff}
+.b-resume{background:#06a;color:#fff}
+.b-rev{background:#609;color:#fff}
+.warn{text-align:center;color:#f80;font-size:0.75em;margin:4px 0}
+.info{text-align:center;color:#666;font-size:0.7em;margin:4px 0}
 </style></head><body>
-<h1>KM251 Malowarka Pasow Drogowych</h1>
+<h1>KM251 Trassar</h1>
 <div class="card"><div class="status">
-<div class="stat-item"><div class="stat-label">Stan</div><div class="stat-value" id="state">---</div></div>
-<div class="stat-item"><div class="stat-label">Predkosc</div><div class="stat-value" id="speed">---</div></div>
-<div class="stat-item"><div class="stat-label">Dystans</div><div class="stat-value" id="dist">---</div></div>
-<div class="stat-item"><div class="stat-label">Powierzchnia</div><div class="stat-value" id="area">---</div></div>
+<div class="si wide"><div class="sl">Predkosc</div><div class="sv big" id="speed">---</div></div>
+<div class="si"><div class="sl">Stan</div><div class="sv" id="state">---</div></div>
+<div class="si"><div class="sl">Powierzchnia</div><div class="sv" id="area">---</div></div>
+<div class="si"><div class="sl">Dystans</div><div class="sv" id="dist">---</div></div>
+<div class="si"><div class="sl">Kalibracja</div><div class="sv" id="cal">---</div></div>
 </div></div>
-<div class="card"><h2>Pistolety</h2><div class="guns" id="guns"></div></div>
-<div class="card"><h2>Sterowanie</h2><div class="ctrl-btns">
-<button class="btn btn-start" onclick="apiPost('/api/start')">START</button>
-<button class="btn btn-pause" onclick="apiPost('/api/pause')">PAUZA</button>
-<button class="btn btn-stop" onclick="apiPost('/api/stop')">STOP</button>
-</div><div class="ctrl-btns">
-<button class="btn btn-pause" onclick="apiPost('/api/resume')">WZNOW</button>
-<button class="btn btn-reverse" onclick="apiPost('/api/reverse')">ODWROC P-3</button>
+<div class="card"><h2>Pistolety</h2><div class="guns" id="guns"></div>
+<div class="warn" id="speedWarn"></div></div>
+<div class="card"><h2>Sterowanie</h2>
+<div class="cb">
+<button class="btn b-start" onclick="api('/api/start')">START</button>
+<button class="btn b-pause" onclick="api('/api/pause')">PAUZA</button>
+<button class="btn b-stop" onclick="api('/api/stop')">STOP</button>
+</div>
+<div class="cb">
+<button class="btn b-resume" onclick="api('/api/resume')">WZNOW</button>
+<button class="btn b-rev" onclick="api('/api/reverse')">ODWROC P-3</button>
 </div></div>
-<div class="card"><h2>Wzorce - Os Jezdni</h2><div class="patterns" id="axis-pats"></div></div>
-<div class="card"><h2>Wzorce - Krawedz</h2><div class="patterns" id="edge-pats"></div></div>
-<div class="card" style="text-align:center"><a href="/calibration" style="color:#0ff">Kalibracja enkodera</a></div>
+<div class="card"><h2>Wzorce - Os Jezdni</h2><div class="pats" id="axP"></div></div>
+<div class="card"><h2>Wzorce - Krawedz</h2><div class="pats" id="edP"></div></div>
+<div class="card"><h2>Kalibracja</h2>
+<div class="cb">
+<button class="btn b-start" onclick="api('/api/cal/start')">1.Start</button>
+<button class="btn b-resume" onclick="api('/api/cal/begin')">2.Jedz</button>
+</div>
+<div class="cb">
+<button class="btn b-pause" onclick="api('/api/cal/end')">3.Stop</button>
+<button class="btn b-rev" onclick="api('/api/cal/save');alert('Zapisano!')">4.Zapisz</button>
+</div></div>
+<div class="info">KM251 v)rawhtml";
+    html += FW_VERSION_STRING;
+    html += R"rawhtml( | WiFi: Trassar | http://192.168.4.1</div>
 <script>
-const axisPats=[
-{id:0,code:'P-1a',name:'Przerywana dluga'},
-{id:1,code:'P-1b',name:'Przerywana krotka'},
-{id:2,code:'P-1c',name:'Wydzielajaca'},
-{id:3,code:'P-1d',name:'Prowadzaca waska'},
-{id:4,code:'P-1e',name:'Prowadzaca szeroka'},
-{id:5,code:'P-2a',name:'Ciagla waska'},
-{id:6,code:'P-2b',name:'Ciagla szeroka'},
-{id:7,code:'P-3a',name:'Przekraczalna dluga'},
-{id:8,code:'P-3b',name:'Przekraczalna krotka'},
-{id:9,code:'P-4',name:'Podwojna ciagla'}
+const AP=[
+{i:0,c:'P-1a',n:'Przeryw. dluga'},{i:1,c:'P-1b',n:'Przeryw. krotka'},
+{i:2,c:'P-1c',n:'Wydzielajaca'},{i:3,c:'P-1d',n:'Prowadz. waska'},
+{i:4,c:'P-1e',n:'Prowadz. szer.'},{i:5,c:'P-2a',n:'Ciagla waska'},
+{i:6,c:'P-2b',n:'Ciagla szer.'},{i:7,c:'P-3a',n:'Przekracz. dl.'},
+{i:8,c:'P-3b',n:'Przekracz. kr.'},{i:9,c:'P-4',n:'Podwojna ciagla'}
 ];
-const edgePats=[
-{id:10,code:'P-6',name:'Ostrzegawcza'},
-{id:11,code:'P-7a',name:'Kraw.przeryw.szer.'},
-{id:12,code:'P-7b',name:'Kraw.ciagla szer.'},
-{id:13,code:'P-7c',name:'Kraw.przeryw.wask.'},
-{id:14,code:'P-7d',name:'Kraw.ciagla wask.'}
+const EP=[
+{i:10,c:'P-6',n:'Ostrzegawcza'},{i:11,c:'P-7a',n:'Kraw.prz.szer.'},
+{i:12,c:'P-7b',n:'Kraw.ciag.szer.'},{i:13,c:'P-7c',n:'Kraw.prz.wask.'},
+{i:14,c:'P-7d',n:'Kraw.ciag.wask.'}
 ];
-function apiPost(url,body){fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body||''}).then(r=>r.json()).catch(e=>console.error(e))}
-function setAxis(id){apiPost('/api/pattern/axis','id='+id)}
-function setEdge(id){apiPost('/api/pattern/edge','id='+id)}
-function buildPats(){
-let ah='';axisPats.forEach(p=>{ah+='<button class="pat-btn" id="ap'+p.id+'" onclick="setAxis('+p.id+')">'+p.code+'<br><small>'+p.name+'</small></button>'});
-document.getElementById('axis-pats').innerHTML=ah;
-let eh='';edgePats.forEach(p=>{eh+='<button class="pat-btn" id="ep'+p.id+'" onclick="setEdge('+p.id+')">'+p.code+'<br><small>'+p.name+'</small></button>'});
-document.getElementById('edge-pats').innerHTML=eh;
+function api(u,b){fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b||''}).catch(e=>{})}
+function init(){
+let h='';AP.forEach(p=>{h+='<button class="pb" id="a'+p.i+'" onclick="api(\'/api/pattern/axis\',\'id='+p.i+'\')">'+p.c+'<br><small>'+p.n+'</small></button>'});
+document.getElementById('axP').innerHTML=h;
+h='';EP.forEach(p=>{h+='<button class="pb" id="e'+p.i+'" onclick="api(\'/api/pattern/edge\',\'id='+p.i+'\')">'+p.c+'<br><small>'+p.n+'</small></button>'});
+document.getElementById('edP').innerHTML=h;
 }
-function updateStatus(){
+function upd(){
 fetch('/api/status').then(r=>r.json()).then(d=>{
 document.getElementById('state').textContent=d.state;
 document.getElementById('speed').textContent=d.speed_kmh.toFixed(1)+' km/h';
 document.getElementById('dist').textContent=d.distance_m.toFixed(1)+' m';
-document.getElementById('area').textContent=d.area_m2.toFixed(2)+' m2';
-let gh='';for(let i=0;i<6;i++){let on=d.guns[i];gh+='<div class="gun '+(on?'gun-on':'gun-off')+'">P'+(i+1)+'</div>'}
-document.getElementById('guns').innerHTML=gh;
-document.querySelectorAll('.pat-btn').forEach(b=>{b.classList.remove('active')});
-let ae=document.getElementById('ap'+d.axis_pattern);if(ae)ae.classList.add('active');
-let ee=document.getElementById('ep'+d.edge_pattern);if(ee)ee.classList.add('active');
+document.getElementById('area').textContent=d.area_m2.toFixed(2)+' m\u00B2';
+document.getElementById('cal').textContent=d.calibrated?'OK':'Wymagana';
+document.getElementById('cal').style.color=d.calibrated?'#0f0':'#f00';
+let g='';for(let i=0;i<6;i++){let on=d.guns[i];let ip=d.gun_pattern&&d.gun_pattern[i];
+g+='<div class="gun '+(on?'gun-on':(ip?'gun-pat':'gun-off'))+'">P'+(i+1)+'</div>'}
+document.getElementById('guns').innerHTML=g;
+let w=document.getElementById('speedWarn');
+if(d.state==='Malowanie'&&d.speed_kmh<3.0){w.textContent='! Za mala predkosc - pistolety zablokowane !';}else{w.textContent='';}
+document.querySelectorAll('.pb').forEach(b=>b.classList.remove('act'));
+let ae=document.getElementById('a'+d.axis_pattern);if(ae)ae.classList.add('act');
+let ee=document.getElementById('e'+d.edge_pattern);if(ee)ee.classList.add('act');
 }).catch(e=>{});}
-buildPats();updateStatus();setInterval(updateStatus,500);
+init();upd();setInterval(upd,500);
 </script></body></html>)rawhtml";
     return html;
 }
@@ -396,53 +413,22 @@ static String generateStatusJSON()
         gunsArr.add(gunController.isGunActive(static_cast<GunID>(i)));
     }
 
+    // Maska wzorca - które pistolety są w aktywnym wzorcu
+    const PatternDef& axisDef = patternManager.getActiveAxisDef();
+    const PatternDef& edgeDef = patternManager.getActiveEdgeDef();
+    JsonArray patArr = doc["gun_pattern"].to<JsonArray>();
+    for (uint8_t i = 0; i < NUM_GUNS; i++) {
+        patArr.add((bool)(axisDef.guns[i] || edgeDef.guns[i]));
+    }
+
+    if (sdLogger.isReady()) {
+        doc["sd_ok"] = true;
+        doc["sd_size_mb"] = (unsigned long)sdLogger.getCardSizeMB();
+    } else {
+        doc["sd_ok"] = false;
+    }
+
     String output;
     serializeJson(doc, output);
     return output;
-}
-
-// =============================================================
-// Strona kalibracji
-// =============================================================
-static String generateCalibrationPage()
-{
-    String html = R"rawhtml(<!DOCTYPE html><html lang="pl"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KM251 Kalibracja</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#1a1a2e;color:#eee;padding:10px}
-h1{text-align:center;color:#0ff;margin:10px 0}
-.card{background:#16213e;border-radius:8px;padding:16px;margin:10px 0;text-align:center}
-.step{font-size:1.2em;margin:10px 0;color:#0ff}
-.info{color:#aaa;margin:5px 0}
-.btn{padding:14px 30px;border:none;border-radius:8px;font-size:1.1em;font-weight:bold;cursor:pointer;margin:5px}
-.btn-go{background:#0a0;color:#fff}.btn-cancel{background:#a00;color:#fff}
-#status{font-size:1.3em;margin:10px 0}
-#pulses{font-size:2em;color:#0ff;margin:10px 0}
-</style></head><body>
-<h1>Kalibracja Enkodera</h1>
-<div class="card">
-<div id="status">Nacisnij START</div>
-<div id="pulses">---</div>
-<div class="info">Procedura: START > jedz 10m > START > Zapisz</div>
-<div style="margin-top:10px">
-<button class="btn btn-go" onclick="calStart()">1. Rozpocznij</button>
-<button class="btn btn-go" onclick="calBegin()">2. Jedz!</button>
-<button class="btn btn-go" onclick="calEnd()">3. Stop (10m)</button>
-<button class="btn btn-go" onclick="calSave()">4. Zapisz</button>
-<button class="btn btn-cancel" onclick="location.href='/'">Powrot</button>
-</div></div>
-<script>
-function apiPost(u){fetch(u,{method:'POST'})}
-function calStart(){apiPost('/api/cal/start')}
-function calBegin(){apiPost('/api/cal/begin')}
-function calEnd(){apiPost('/api/cal/end')}
-function calSave(){apiPost('/api/cal/save');alert('Zapisano!')}
-function poll(){fetch('/api/status').then(r=>r.json()).then(d=>{
-document.getElementById('status').textContent=d.calibrated?'Skalibrowany':'Wymaga kalibracji';
-}).catch(e=>{});}
-setInterval(poll,1000);
-</script></body></html>)rawhtml";
-    return html;
 }

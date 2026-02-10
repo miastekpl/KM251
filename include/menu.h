@@ -2,6 +2,7 @@
  * =============================================================
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * System menu i nawigacji na wyświetlaczu
+ * v1.1.0 - Nowy HUD + menu serwisowe
  * =============================================================
  */
 
@@ -16,27 +17,14 @@
 // =============================================================
 enum class Screen : uint8_t {
     SPLASH,
-    HOME,               // Ekran główny (status malowarki)
-    PAINTING,           // Ekran malowania (aktywny proces)
-    PAUSED,             // Malowanie wstrzymane
-    MENU_MAIN,          // Menu główne
-    MENU_PATTERNS_AXIS, // Wybór wzorca osi jezdni
-    MENU_PATTERNS_EDGE, // Wybór wzorca krawędzi
-    MENU_DIAGNOSTICS,   // Diagnostyka pistoletów
-    MENU_SETTINGS,      // Ustawienia
-    MENU_INFO,          // Informacje o urządzeniu
-    CALIBRATION,        // Ekran kalibracji enkodera
-};
-
-// =============================================================
-// Element listy menu
-// =============================================================
-#define MAX_MENU_ITEMS  16
-
-struct MenuItem {
-    const char* label;
-    const char* value;
-    bool hasSubmenu;
+    HOME,               // Ekran główny HUD (prędkość, wzorzec, pistolety)
+    PAINTING,           // Malowanie aktywne
+    PAUSED,             // Malowanie wstrzymane (miganie)
+    SERVICE_MENU,       // Menu serwisowe (4 opcje)
+    CALIBRATION,        // Kalibracja enkodera
+    DISTANCE_MEASURE,   // Pomiar dystansu
+    REPORTS,            // Raporty z pracy
+    NOZZLE_CLEANING,    // Czyszczenie dysz
 };
 
 // =============================================================
@@ -52,19 +40,26 @@ public:
     Screen getScreen() const { return _screen; }
     void setScreen(Screen scr);
 
-    // Wymuszenie przerysowania
     void forceRedraw() { _needsRedraw = true; }
+
+    // Czy jesteśmy w trybie czyszczenia dysz (wyjątek od limitu prędkości)
+    bool isNozzleCleaning() const { return _nozzleCleaningActive; }
 
 private:
     Screen _screen;
     Screen _prevScreen;
     bool _needsRedraw;
 
-    // Menu
-    MenuItem _items[MAX_MENU_ITEMS];
-    uint8_t _itemCount;
-    int8_t _selected;
-    int8_t _scrollOff;
+    // Menu serwisowe
+    int8_t _serviceMenuSelected;
+
+    // Pomiar dystansu
+    bool _distMeasureRunning;
+    int64_t _distMeasureStartPulses;
+    float _distMeasureSaved;
+
+    // Czyszczenie dysz
+    bool _nozzleCleaningActive;
 
     // Timery
     uint32_t _splashStart;
@@ -75,39 +70,25 @@ private:
     void _inputHome();
     void _inputPainting();
     void _inputPaused();
-    void _inputMainMenu();
-    void _inputPatternsAxis();
-    void _inputPatternsEdge();
-    void _inputDiagnostics();
-    void _inputSettings();
-    void _inputInfo();
+    void _inputServiceMenu();
     void _inputCalibration();
+    void _inputDistanceMeasure();
+    void _inputReports();
+    void _inputNozzleCleaning();
 
     // Renderowanie ekranów
     void _renderSplash();
-    void _renderHome();
-    void _renderPainting();
-    void _renderPaused();
-    void _renderMainMenu();
-    void _renderPatternsAxis();
-    void _renderPatternsEdge();
-    void _renderDiagnostics();
-    void _renderSettings();
-    void _renderInfo();
+    void _renderHUD(bool painting, bool paused);
+    void _renderServiceMenu();
     void _renderCalibration();
+    void _renderDistanceMeasure();
+    void _renderReports();
+    void _renderNozzleCleaning();
 
-    // Budowanie menu
-    void _buildMainMenu();
-    void _buildPatternsAxisMenu();
-    void _buildPatternsEdgeMenu();
-    void _buildDiagnosticsMenu();
-    void _buildSettingsMenu();
-
-    // Nawigacja
-    void _navUp();
-    void _navDown();
-    void _selectItem();
-    void _drawMenuList();
+    // Pomocnicze
+    void _drawGunBoxes(uint8_t patternMask, uint8_t activeMask, bool blinking);
+    uint8_t _getPatternGunMask();
+    void _logSessionStop();
 };
 
 extern MenuSystem menuSystem;
