@@ -1,7 +1,7 @@
 # KM251 - Instrukcja Obsługi
 
 ## Sterownik Malowarki Pasów Drogowych
-### Firmware v1.0.0
+### Firmware v1.0.1
 
 ---
 
@@ -23,9 +23,13 @@ oznakowania drogowego.
 
 ### 2.2 Enkoder obrotowy
 
-- **W menu:** nawigacja góra/dół po liście opcji
-- **Na ekranie głównym:** zmiana wzorca krawędzi (P-6, P-7a...P-7d)
-- **Podczas jazdy:** pomiar dystansu (kalibrowany)
+Enkoder służy **wyłącznie do pomiarów** — nie do nawigacji po menu.
+
+- **Pomiar dystansu** — zliczanie impulsów koła (kalibrowany)
+- **Pomiar prędkości** — obliczanie km/h na podstawie impulsów
+- **Obliczanie powierzchni** — dystans × szerokość aktywnych pistoletów
+
+Nawigacja po menu odbywa się **wyłącznie Selektorem** (krótkie kliknięcie = następna opcja, długie przytrzymanie = wejście w funkcję).
 
 ## 3. Wzorce malowania
 
@@ -105,7 +109,7 @@ Panel umożliwia:
 
 1. Włącz urządzenie
 2. Wybierz wzorzec osi (Selektor — krótkie kliknięcia)
-3. Wybierz wzorzec krawędzi (obracaj enkoder)
+3. Wybierz wzorzec krawędzi (Stop długie → Menu → Wzorce Krawędź → Selektor)
 4. Naciśnij **START** — malowanie rozpoczęte
 5. Naciśnij **START** ponownie — pauza (pistolety wyłączone)
 6. Naciśnij **STOP** — zakończenie sesji

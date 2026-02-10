@@ -12,7 +12,7 @@ wyświetlaczem TFT ILI9341 i panelem WWW.
 - **Serwer WWW** (WiFi AP) — zdalna obsługa z telefonu/tabletu
 - **Wyświetlacz TFT 2.8"** ILI9341 320x240 z pełnym GUI
 - **3 przyciski** — Start/Pauza, Stop, Selektor
-- **Enkoder obrotowy** — pomiar dystansu + nawigacja po menu
+- **Enkoder obrotowy** — pomiar dystansu, prędkości i powierzchni
 - **Zapis ustawień** do NVS (pamięć nieulotna ESP32)
 
 ## Sprzęt

@@ -26,7 +26,6 @@ WheelEncoder::WheelEncoder()
     , _speedMS(0)
     , _lastSpeedPulses(0)
     , _lastSpeedTime(0)
-    , _lastUIPulses(0)
 {
 }
 
@@ -39,8 +38,6 @@ void WheelEncoder::begin()
     _distanceStartPulses = 0;
     _lastSpeedPulses = 0;
     _lastSpeedTime = millis();
-    _lastUIPulses = 0;
-
     loadCalibration();
 
     Serial.printf("[ENCODER] Zainicjalizowano. Skalibrowany: %s, %.4f imp/mm\n",
@@ -101,21 +98,6 @@ int64_t WheelEncoder::getRawPulses() const
 void WheelEncoder::resetDistance()
 {
     _distanceStartPulses = hwEncoder.getCount();
-}
-
-// =============================================================
-// Odczyt delta dla nawigacji UI
-// =============================================================
-int32_t WheelEncoder::getUIDelta()
-{
-    int64_t current = hwEncoder.getCount();
-    int32_t delta = (int32_t)(current - _lastUIPulses);
-    // Podziel przez 4 żeby uzyskać 1 "klik" na detent
-    int32_t clicks = delta / 4;
-    if (clicks != 0) {
-        _lastUIPulses += clicks * 4;
-    }
-    return clicks;
 }
 
 // =============================================================

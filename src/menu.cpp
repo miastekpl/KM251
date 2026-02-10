@@ -125,17 +125,6 @@ void MenuSystem::_inputHome()
         patternManager.toggleReversed();
         _needsRedraw = true;
     }
-
-    int32_t delta = wheelEncoder.getUIDelta();
-    if (delta != 0) {
-        uint8_t cur = static_cast<uint8_t>(patternManager.getActiveEdgePattern());
-        int8_t nv = (int8_t)cur + (delta > 0 ? 1 : -1);
-        if (nv < 10) nv = 14;
-        if (nv > 14) nv = 10;
-        patternManager.setActiveEdgePattern(static_cast<PatternID>(nv));
-        storageManager.saveLastEdgePattern(nv);
-        _needsRedraw = true;
-    }
 }
 
 void MenuSystem::_inputPainting()
@@ -171,9 +160,6 @@ void MenuSystem::_inputPaused()
 
 void MenuSystem::_inputMainMenu()
 {
-    int32_t delta = wheelEncoder.getUIDelta();
-    if (delta > 0) _navDown(); else if (delta < 0) _navUp();
-
     ButtonEvent selEvt = buttonManager.getEvent(ButtonID::SELECTOR);
     if (selEvt == ButtonEvent::CLICK) _navDown();
     if (selEvt == ButtonEvent::LONG_PRESS) { _selectItem(); return; }
@@ -184,9 +170,6 @@ void MenuSystem::_inputMainMenu()
 
 void MenuSystem::_inputPatternsAxis()
 {
-    int32_t delta = wheelEncoder.getUIDelta();
-    if (delta > 0) _navDown(); else if (delta < 0) _navUp();
-
     ButtonEvent selEvt = buttonManager.getEvent(ButtonID::SELECTOR);
     if (selEvt == ButtonEvent::CLICK) _navDown();
     if (selEvt == ButtonEvent::LONG_PRESS) {
@@ -204,9 +187,6 @@ void MenuSystem::_inputPatternsAxis()
 
 void MenuSystem::_inputPatternsEdge()
 {
-    int32_t delta = wheelEncoder.getUIDelta();
-    if (delta > 0) _navDown(); else if (delta < 0) _navUp();
-
     ButtonEvent selEvt = buttonManager.getEvent(ButtonID::SELECTOR);
     if (selEvt == ButtonEvent::CLICK) _navDown();
     if (selEvt == ButtonEvent::LONG_PRESS) {
@@ -225,9 +205,6 @@ void MenuSystem::_inputPatternsEdge()
 
 void MenuSystem::_inputDiagnostics()
 {
-    int32_t delta = wheelEncoder.getUIDelta();
-    if (delta > 0) _navDown(); else if (delta < 0) _navUp();
-
     ButtonEvent selEvt = buttonManager.getEvent(ButtonID::SELECTOR);
     if (selEvt == ButtonEvent::CLICK) _navDown();
     if (selEvt == ButtonEvent::LONG_PRESS && _selected < 6) {
@@ -241,9 +218,6 @@ void MenuSystem::_inputDiagnostics()
 
 void MenuSystem::_inputSettings()
 {
-    int32_t delta = wheelEncoder.getUIDelta();
-    if (delta > 0) _navDown(); else if (delta < 0) _navUp();
-
     ButtonEvent selEvt = buttonManager.getEvent(ButtonID::SELECTOR);
     if (selEvt == ButtonEvent::CLICK) _navDown();
     if (selEvt == ButtonEvent::LONG_PRESS) {
@@ -382,7 +356,7 @@ void MenuSystem::_renderMainMenu()
 {
     displayManager.drawHeader("Menu Glowne");
     _drawMenuList();
-    displayManager.drawStatusBar("Sel:nawiguj Przytrzym:wybierz");
+    displayManager.drawStatusBar("SEL=nawiguj SEL(dl)=wybierz");
 }
 
 void MenuSystem::_renderPatternsAxis()

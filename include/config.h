@@ -16,8 +16,8 @@
 // =============================================================
 #define FW_VERSION_MAJOR    1
 #define FW_VERSION_MINOR    0
-#define FW_VERSION_PATCH    0
-#define FW_VERSION_STRING   "1.0.0"
+#define FW_VERSION_PATCH    1
+#define FW_VERSION_STRING   "1.0.1"
 #define FW_BUILD_DATE       __DATE__
 #define FW_BUILD_TIME       __TIME__
 #define FW_DEVICE_NAME      "KM251"
@@ -38,7 +38,7 @@
 #define PIN_TFT_BL          7
 
 // =============================================================
-// PINY - ENKODER OBROTOWY (pomiar dystansu + nawigacja UI)
+// PINY - ENKODER OBROTOWY (pomiar dystansu, predkosci, powierzchni)
 // =============================================================
 #define PIN_ENC_A            1   // Enkoder kanał A
 #define PIN_ENC_B            2   // Enkoder kanał B

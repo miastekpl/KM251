@@ -41,9 +41,6 @@ public:
     // Reset licznika dystansu
     void resetDistance();
 
-    // Odczyt dla nawigacji UI (delta od ostatniego odczytu)
-    int32_t getUIDelta();
-
     // === KALIBRACJA ===
     // Wejście w tryb kalibracji
     void startCalibration();
@@ -79,8 +76,6 @@ private:
     int64_t _lastSpeedPulses;
     uint32_t _lastSpeedTime;
 
-    // UI delta
-    int64_t _lastUIPulses;
 };
 
 extern WheelEncoder wheelEncoder;
