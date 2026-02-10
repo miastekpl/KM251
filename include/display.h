@@ -56,8 +56,8 @@ public:
 
     // Dostęp do TFT
     TFT_eSPI& tft() { return _tft; }
-    int16_t width() const;
-    int16_t height() const;
+    int16_t width();
+    int16_t height();
 
 private:
     TFT_eSPI _tft;

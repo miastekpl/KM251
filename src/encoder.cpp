@@ -31,7 +31,7 @@ WheelEncoder::WheelEncoder()
 
 void WheelEncoder::begin()
 {
-    ESP32Encoder::useInternalWeakPullResistors = puType::up;
+    ESP32Encoder::useInternalWeakPullResistors = puType::UP;
     hwEncoder.attachFullQuad(PIN_ENC_A, PIN_ENC_B);
     hwEncoder.setCount(0);
 

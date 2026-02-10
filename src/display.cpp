@@ -23,7 +23,8 @@ void DisplayManager::begin()
     _tft.setTextColor(COLOR_TEXT_PRIMARY, COLOR_BG);
     _tft.setTextDatum(TL_DATUM);
 
-    ledcAttach(PIN_TFT_BL, TFT_BL_FREQ, TFT_BL_RESOLUTION);
+    ledcSetup(TFT_BL_CHANNEL, TFT_BL_FREQ, TFT_BL_RESOLUTION);
+    ledcAttachPin(PIN_TFT_BL, TFT_BL_CHANNEL);
     setBrightness(_brightness);
 
     Serial.println("[DISPLAY] Zainicjalizowano ILI9341 320x240");
@@ -32,7 +33,7 @@ void DisplayManager::begin()
 void DisplayManager::setBrightness(uint8_t brightness)
 {
     _brightness = brightness;
-    ledcWrite(PIN_TFT_BL, _brightness);
+    ledcWrite(TFT_BL_CHANNEL, _brightness);
 }
 
 void DisplayManager::clear()
@@ -40,12 +41,12 @@ void DisplayManager::clear()
     _tft.fillScreen(COLOR_BG);
 }
 
-int16_t DisplayManager::width() const
+int16_t DisplayManager::width()
 {
     return _tft.width();
 }
 
-int16_t DisplayManager::height() const
+int16_t DisplayManager::height()
 {
     return _tft.height();
 }
