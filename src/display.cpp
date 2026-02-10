@@ -6,6 +6,7 @@
  */
 
 #include "display.h"
+#include <SPI.h>
 
 DisplayManager displayManager;
 
@@ -17,6 +18,10 @@ DisplayManager::DisplayManager()
 
 void DisplayManager::begin()
 {
+    // Jawna inicjalizacja magistrali SPI przed TFT
+    // Na ESP32-S3 N16R8 wymagane po zmianie PSRAM na tryb QSPI
+    SPI.begin(/*SCLK*/12, /*MISO*/13, /*MOSI*/11, /*SS*/-1);
+
     _tft.init();
     _tft.setRotation(TFT_ROTATION);
     _tft.fillScreen(COLOR_BG);

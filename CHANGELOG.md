@@ -2,6 +2,15 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.1.1] - 2026-02-10
+
+### Poprawiono - KRYTYCZNY: Guru Meditation Error przy starcie
+- **Problem**: Crash `StoreProhibited` w `TFT_eSPI::init()` (EXCVADDR: 0x00000010)
+- **Przyczyna**: `board_build.arduino.memory_type = qio_opi` (Octal PSRAM) rezerwuje GPIO11-14 dla dodatkowych linii danych SPI PSRAM. Piny TFT (MOSI=GPIO11, SCLK=GPIO12, MISO=GPIO13) kolidowały z kontrolerem PSRAM.
+- **Rozwiązanie 1**: Zmiana trybu PSRAM z `qio_opi` na `qio_qspi` (Quad SPI) — zwalnia GPIO11-14
+- **Rozwiązanie 2**: Jawna inicjalizacja `SPI.begin(12, 13, 11, -1)` przed `_tft.init()` w display.cpp
+- **Kompromis**: Przepustowość PSRAM zmniejszona o połowę (OPI→QSPI), bez wpływu na działanie aplikacji
+
 ## [1.1.0] - 2026-02-10
 
 ### Dodano - Nowy interfejs HUD

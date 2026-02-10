@@ -2,7 +2,7 @@
  * =============================================================
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * Plik konfiguracyjny - definicje pinów i parametrów
- * Wersja: 1.1.0
+ * Wersja: 1.1.1
  * =============================================================
  */
 
@@ -16,8 +16,8 @@
 // =============================================================
 #define FW_VERSION_MAJOR    1
 #define FW_VERSION_MINOR    1
-#define FW_VERSION_PATCH    0
-#define FW_VERSION_STRING   "1.1.0"
+#define FW_VERSION_PATCH    1
+#define FW_VERSION_STRING   "1.1.1"
 #define FW_BUILD_DATE       __DATE__
 #define FW_BUILD_TIME       __TIME__
 #define FW_DEVICE_NAME      "KM251"

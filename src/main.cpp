@@ -3,7 +3,7 @@
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * Program główny - integracja wszystkich modułów
  *
- * Firmware v1.1.0
+ * Firmware v1.1.1
  * Platforma: ESP32-S3 N16R8
  * =============================================================
  */
