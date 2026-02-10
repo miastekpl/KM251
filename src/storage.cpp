@@ -6,6 +6,7 @@
  */
 
 #include "storage.h"
+#include "patterns.h"
 #include <Preferences.h>
 
 StorageManager storageManager;
