@@ -2,13 +2,14 @@
  * =============================================================
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * Implementacja serwera WWW (WiFi AP)
+ * Serwer HTTP: ESP-IDF natywny (esp_http_server)
  * Dostęp: http://192.168.4.1
  * =============================================================
  */
 
 #include "webserver.h"
 #include <WiFi.h>
-#include <WebServer.h>
+#include <esp_http_server.h>
 #include <ArduinoJson.h>
 #include "patterns.h"
 #include "guns.h"
@@ -18,12 +19,193 @@
 
 KM251WebServer webServer;
 
-static WebServer server(WEB_SERVER_PORT);
+static httpd_handle_t httpServer = NULL;
 
-// Deklaracje wyprzedzające wolnych funkcji generujących HTML
+// =============================================================
+// Deklaracje wyprzedzające - generatory HTML/JSON
+// =============================================================
 static String generateMainPage();
 static String generateStatusJSON();
 static String generateCalibrationPage();
+
+// =============================================================
+// Helpers
+// =============================================================
+static esp_err_t sendHTML(httpd_req_t *req, const String& html)
+{
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_send(req, html.c_str(), html.length());
+    return ESP_OK;
+}
+
+static esp_err_t sendJSON(httpd_req_t *req, const char* json)
+{
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, json);
+    return ESP_OK;
+}
+
+static esp_err_t sendJSONOk(httpd_req_t *req)
+{
+    return sendJSON(req, "{\"ok\":true}");
+}
+
+static esp_err_t sendJSONError(httpd_req_t *req)
+{
+    httpd_resp_set_status(req, "400 Bad Request");
+    return sendJSON(req, "{\"ok\":false}");
+}
+
+static String readPostBody(httpd_req_t *req)
+{
+    int len = req->content_len;
+    if (len <= 0 || len > 256) return "";
+    char buf[257];
+    int ret = httpd_req_recv(req, buf, len);
+    if (ret <= 0) return "";
+    buf[ret] = '\0';
+    return String(buf);
+}
+
+static String getArg(const String& body, const char* key)
+{
+    String search = String(key) + "=";
+    int idx = body.indexOf(search);
+    if (idx < 0) return "";
+    idx += search.length();
+    int end = body.indexOf('&', idx);
+    if (end < 0) end = body.length();
+    return body.substring(idx, end);
+}
+
+// =============================================================
+// Handlery HTTP
+// =============================================================
+static esp_err_t handleRoot(httpd_req_t *req)
+{
+    return sendHTML(req, generateMainPage());
+}
+
+static esp_err_t handleStatus(httpd_req_t *req)
+{
+    String json = generateStatusJSON();
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json.c_str(), json.length());
+    return ESP_OK;
+}
+
+static esp_err_t handlePatternAxis(httpd_req_t *req)
+{
+    String body = readPostBody(req);
+    String idStr = getArg(body, "id");
+    if (idStr.length() > 0) {
+        uint8_t id = idStr.toInt();
+        if (id < NUM_PATTERNS) {
+            patternManager.setActiveAxisPattern(static_cast<PatternID>(id));
+            storageManager.saveLastAxisPattern(id);
+            if (paintProcess.getState() == PaintState::PAINTING) {
+                paintProcess.setAxisPattern(static_cast<PatternID>(id));
+            }
+            return sendJSONOk(req);
+        }
+    }
+    return sendJSONError(req);
+}
+
+static esp_err_t handlePatternEdge(httpd_req_t *req)
+{
+    String body = readPostBody(req);
+    String idStr = getArg(body, "id");
+    if (idStr.length() > 0) {
+        uint8_t id = idStr.toInt();
+        if (id >= 10 && id <= 14) {
+            patternManager.setActiveEdgePattern(static_cast<PatternID>(id));
+            storageManager.saveLastEdgePattern(id);
+            if (paintProcess.getState() == PaintState::PAINTING) {
+                paintProcess.setEdgePattern(static_cast<PatternID>(id));
+            }
+            return sendJSONOk(req);
+        }
+    }
+    return sendJSONError(req);
+}
+
+static esp_err_t handleReverse(httpd_req_t *req)
+{
+    patternManager.toggleReversed();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleStart(httpd_req_t *req)
+{
+    paintProcess.start();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handlePause(httpd_req_t *req)
+{
+    paintProcess.pause();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleResume(httpd_req_t *req)
+{
+    paintProcess.resume();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleStop(httpd_req_t *req)
+{
+    paintProcess.stop();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleCalibrationPage(httpd_req_t *req)
+{
+    return sendHTML(req, generateCalibrationPage());
+}
+
+static esp_err_t handleCalStart(httpd_req_t *req)
+{
+    wheelEncoder.startCalibration();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleCalBegin(httpd_req_t *req)
+{
+    wheelEncoder.beginMeasurement();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleCalEnd(httpd_req_t *req)
+{
+    wheelEncoder.endMeasurement();
+    return sendJSONOk(req);
+}
+
+static esp_err_t handleCalSave(httpd_req_t *req)
+{
+    storageManager.saveCalibration(wheelEncoder.getCalibrationFactor());
+    return sendJSONOk(req);
+}
+
+// =============================================================
+// Rejestracja endpointow
+// =============================================================
+static void registerURI(httpd_handle_t srv, const char* uri,
+                         httpd_method_t method, esp_err_t (*handler)(httpd_req_t*))
+{
+    httpd_uri_t def = {};
+    def.uri       = uri;
+    def.method    = method;
+    def.handler   = handler;
+    def.user_ctx  = NULL;
+    httpd_register_uri_handler(srv, &def);
+}
+
+// =============================================================
+// Klasa KM251WebServer
+// =============================================================
 
 KM251WebServer::KM251WebServer()
     : _clientConnected(false)
@@ -35,13 +217,13 @@ void KM251WebServer::begin()
 {
     _setupWiFiAP();
     _setupRoutes();
-    server.begin();
     Serial.printf("[WEB] Serwer uruchomiony na http://%s\n", getIPAddress().c_str());
 }
 
 void KM251WebServer::update()
 {
-    server.handleClient();
+    // ESP-IDF httpd dziala na osobnym tasku FreeRTOS
+    // Nie wymaga obslugi w loop()
 }
 
 String KM251WebServer::getIPAddress() const
@@ -59,98 +241,45 @@ void KM251WebServer::_setupWiFiAP()
 
 void KM251WebServer::_setupRoutes()
 {
-    server.on("/", HTTP_GET, []() {
-        server.send(200, "text/html", generateMainPage());
-    });
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.server_port = WEB_SERVER_PORT;
+    config.max_uri_handlers = 16;
+    config.stack_size = 8192;
 
-    server.on("/api/status", HTTP_GET, []() {
-        server.send(200, "application/json", generateStatusJSON());
-    });
+    if (httpd_start(&httpServer, &config) != ESP_OK) {
+        Serial.println("[WEB] BLAD uruchamiania serwera HTTP!");
+        return;
+    }
 
-    server.on("/api/pattern/axis", HTTP_POST, []() {
-        if (server.hasArg("id")) {
-            uint8_t id = server.arg("id").toInt();
-            if (id < NUM_PATTERNS) {
-                patternManager.setActiveAxisPattern(static_cast<PatternID>(id));
-                storageManager.saveLastAxisPattern(id);
-                if (paintProcess.getState() == PaintState::PAINTING) {
-                    paintProcess.setAxisPattern(static_cast<PatternID>(id));
-                }
-                server.send(200, "application/json", "{\"ok\":true}");
-                return;
-            }
-        }
-        server.send(400, "application/json", "{\"ok\":false}");
-    });
+    // Strony HTML
+    registerURI(httpServer, "/",             HTTP_GET,  handleRoot);
+    registerURI(httpServer, "/calibration",  HTTP_GET,  handleCalibrationPage);
 
-    server.on("/api/pattern/edge", HTTP_POST, []() {
-        if (server.hasArg("id")) {
-            uint8_t id = server.arg("id").toInt();
-            if (id >= 10 && id <= 14) {
-                patternManager.setActiveEdgePattern(static_cast<PatternID>(id));
-                storageManager.saveLastEdgePattern(id);
-                if (paintProcess.getState() == PaintState::PAINTING) {
-                    paintProcess.setEdgePattern(static_cast<PatternID>(id));
-                }
-                server.send(200, "application/json", "{\"ok\":true}");
-                return;
-            }
-        }
-        server.send(400, "application/json", "{\"ok\":false}");
-    });
+    // API - status
+    registerURI(httpServer, "/api/status",   HTTP_GET,  handleStatus);
 
-    server.on("/api/reverse", HTTP_POST, []() {
-        patternManager.toggleReversed();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
+    // API - wzorce
+    registerURI(httpServer, "/api/pattern/axis", HTTP_POST, handlePatternAxis);
+    registerURI(httpServer, "/api/pattern/edge", HTTP_POST, handlePatternEdge);
+    registerURI(httpServer, "/api/reverse",      HTTP_POST, handleReverse);
 
-    server.on("/api/start", HTTP_POST, []() {
-        paintProcess.start();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
+    // API - sterowanie
+    registerURI(httpServer, "/api/start",    HTTP_POST, handleStart);
+    registerURI(httpServer, "/api/pause",    HTTP_POST, handlePause);
+    registerURI(httpServer, "/api/resume",   HTTP_POST, handleResume);
+    registerURI(httpServer, "/api/stop",     HTTP_POST, handleStop);
 
-    server.on("/api/pause", HTTP_POST, []() {
-        paintProcess.pause();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
+    // API - kalibracja
+    registerURI(httpServer, "/api/cal/start", HTTP_POST, handleCalStart);
+    registerURI(httpServer, "/api/cal/begin", HTTP_POST, handleCalBegin);
+    registerURI(httpServer, "/api/cal/end",   HTTP_POST, handleCalEnd);
+    registerURI(httpServer, "/api/cal/save",  HTTP_POST, handleCalSave);
 
-    server.on("/api/resume", HTTP_POST, []() {
-        paintProcess.resume();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
-
-    server.on("/api/stop", HTTP_POST, []() {
-        paintProcess.stop();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
-
-    server.on("/calibration", HTTP_GET, []() {
-        server.send(200, "text/html", generateCalibrationPage());
-    });
-
-    server.on("/api/cal/start", HTTP_POST, []() {
-        wheelEncoder.startCalibration();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
-
-    server.on("/api/cal/begin", HTTP_POST, []() {
-        wheelEncoder.beginMeasurement();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
-
-    server.on("/api/cal/end", HTTP_POST, []() {
-        wheelEncoder.endMeasurement();
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
-
-    server.on("/api/cal/save", HTTP_POST, []() {
-        storageManager.saveCalibration(wheelEncoder.getCalibrationFactor());
-        server.send(200, "application/json", "{\"ok\":true}");
-    });
+    Serial.printf("[WEB] Zarejestrowano 15 endpointow HTTP\n");
 }
 
 // =============================================================
-// Generowanie strony HTML (wolne funkcje statyczne)
+// Generowanie strony HTML
 // =============================================================
 static String generateMainPage()
 {

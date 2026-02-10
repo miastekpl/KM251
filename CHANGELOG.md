@@ -2,6 +2,16 @@
 
 Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
+## [1.0.2] - 2026-02-10
+
+### Zmieniono
+- Serwer WWW przepisany z Arduino WebServer na **ESP-IDF natywny** (`esp_http_server.h`)
+- Eliminacja problemu z wykrywaniem biblioteki WebServer przez PlatformIO LDF
+- Serwer HTTP działa na osobnym tasku FreeRTOS (bardziej stabilny)
+- Handlery HTTP jako wolne funkcje C (brak problemów z lambdami)
+- 15 zarejestrowanych endpointów REST API
+- Panel WWW bez zmian — pełna kompatybilność wsteczna
+
 ## [1.0.1] - 2026-02-10
 
 ### Dodano
