@@ -29,11 +29,6 @@ private:
 
     void _setupWiFiAP();
     void _setupRoutes();
-
-    // Generowanie stron HTML
-    static String _generateMainPage();
-    static String _generateStatusJSON();
-    static String _generateCalibrationPage();
 };
 
 extern KM251WebServer webServer;

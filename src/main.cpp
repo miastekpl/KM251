@@ -3,7 +3,7 @@
  * KM251 - Sterownik Malowarki Pasów Drogowych
  * Program główny - integracja wszystkich modułów
  *
- * Firmware v1.0.0
+ * Firmware v1.0.1
  * Platforma: ESP32-S3 N16R8
  * =============================================================
  */
@@ -19,6 +19,7 @@
 #include "menu.h"
 #include "webserver.h"
 #include "storage.h"
+#include "sdlogger.h"
 
 // =============================================================
 // SETUP
@@ -51,6 +52,7 @@ void setup()
     gunController.begin();
     paintProcess.begin();
     menuSystem.begin();
+    sdLogger.begin();
     webServer.begin();
 
     // Wczytaj ostatnie wzorce z pamięci
@@ -75,6 +77,13 @@ void setup()
     // Jasność ekranu
     uint8_t brightness = storageManager.loadBrightness();
     displayManager.setBrightness(brightness);
+
+    // Status karty SD
+    if (sdLogger.isReady()) {
+        Serial.printf("[INIT] Karta SD: %llu MB\n", (unsigned long long)sdLogger.getCardSizeMB());
+    } else {
+        Serial.println("[INIT] Karta SD: niedostepna (logi wylaczone)");
+    }
 
     Serial.println("[INIT] Wszystkie moduly zainicjalizowane");
     Serial.printf("[INIT] WiFi AP: %s  IP: %s\n", WIFI_AP_SSID, webServer.getIPAddress().c_str());
@@ -103,9 +112,21 @@ void loop()
     // 4. Renderowanie GUI
     menuSystem.render();
 
-    // 5. Obsługa serwera WWW
+    // 5. Logowanie na kartę SD (podczas malowania)
+    if (paintProcess.getState() == PaintState::PAINTING && sdLogger.isReady()) {
+        sdLogger.logPaintingData(
+            paintProcess.getDistance_m(),
+            paintProcess.getSpeed_kmh(),
+            paintProcess.getStats().totalArea_m2,
+            patternManager.getActiveAxisDef().code,
+            patternManager.getActiveEdgeDef().code,
+            gunController.getGunMask()
+        );
+    }
+
+    // 6. Obsługa serwera WWW
     webServer.update();
 
-    // 6. Yield dla watchdoga
+    // 7. Yield dla watchdoga
     yield();
 }

@@ -20,6 +20,11 @@ KM251WebServer webServer;
 
 static WebServer server(WEB_SERVER_PORT);
 
+// Deklaracje wyprzedzające wolnych funkcji generujących HTML
+static String generateMainPage();
+static String generateStatusJSON();
+static String generateCalibrationPage();
+
 KM251WebServer::KM251WebServer()
     : _clientConnected(false)
     , _wifiStarted(false)
@@ -55,11 +60,11 @@ void KM251WebServer::_setupWiFiAP()
 void KM251WebServer::_setupRoutes()
 {
     server.on("/", HTTP_GET, []() {
-        server.send(200, "text/html", _generateMainPage());
+        server.send(200, "text/html", generateMainPage());
     });
 
     server.on("/api/status", HTTP_GET, []() {
-        server.send(200, "application/json", _generateStatusJSON());
+        server.send(200, "application/json", generateStatusJSON());
     });
 
     server.on("/api/pattern/axis", HTTP_POST, []() {
@@ -120,7 +125,7 @@ void KM251WebServer::_setupRoutes()
     });
 
     server.on("/calibration", HTTP_GET, []() {
-        server.send(200, "text/html", _generateCalibrationPage());
+        server.send(200, "text/html", generateCalibrationPage());
     });
 
     server.on("/api/cal/start", HTTP_POST, []() {
@@ -145,9 +150,9 @@ void KM251WebServer::_setupRoutes()
 }
 
 // =============================================================
-// Generowanie strony HTML
+// Generowanie strony HTML (wolne funkcje statyczne)
 // =============================================================
-String KM251WebServer::_generateMainPage()
+static String generateMainPage()
 {
     String html = R"rawhtml(<!DOCTYPE html><html lang="pl"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -244,7 +249,7 @@ buildPats();updateStatus();setInterval(updateStatus,500);
 // =============================================================
 // Status JSON
 // =============================================================
-String KM251WebServer::_generateStatusJSON()
+static String generateStatusJSON()
 {
     JsonDocument doc;
 
@@ -270,7 +275,7 @@ String KM251WebServer::_generateStatusJSON()
 // =============================================================
 // Strona kalibracji
 // =============================================================
-String KM251WebServer::_generateCalibrationPage()
+static String generateCalibrationPage()
 {
     String html = R"rawhtml(<!DOCTYPE html><html lang="pl"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">

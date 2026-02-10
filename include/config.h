@@ -38,6 +38,12 @@
 #define PIN_TFT_BL          7
 
 // =============================================================
+// PIN - KARTA SD (czytnik zintegrowany z wyswietlaczem ILI9341)
+// Wspoldzielona magistrala SPI: MOSI=11, MISO=13, SCK=12
+// =============================================================
+#define PIN_SD_CS           38   // Chip Select karty SD
+
+// =============================================================
 // PINY - ENKODER OBROTOWY (pomiar dystansu, predkosci, powierzchni)
 // =============================================================
 #define PIN_ENC_A            1   // Enkoder kanał A

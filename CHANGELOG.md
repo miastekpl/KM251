@@ -4,11 +4,19 @@ Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 
 ## [1.0.1] - 2026-02-10
 
+### Dodano
+- Logowanie sesji malowania na kartę SD (CSV) — czytnik zintegrowany z wyświetlaczem
+- Backup kalibracji na kartę SD
+- Podsumowania sesji z dystansem, powierzchnią i czasem
+
 ### Poprawiono
 - Enkoder obrotowy służy **wyłącznie do pomiarów** (dystans, prędkość, powierzchnia)
 - Usunięto nawigację enkoderem po menu — nawigacja wyłącznie Selektorem
 - Usunięto zmianę wzorca krawędzi enkoderem na ekranie głównym
 - Wzorzec krawędzi zmienia się teraz przez Menu > Wzorce Krawędź > Selektor
+- Naprawiono błędy kompilacji: puType::UP, ledcSetup/ledcAttachPin, const width/height
+- Naprawiono brakujący #include patterns.h w storage.cpp
+- Naprawiono WebServer (lib_ldf_mode=deep+) i lambda captures w webserver.cpp
 - Zaktualizowano dokumentację i instrukcję obsługi
 
 ## [1.0.0] - 2026-02-10
@@ -40,7 +48,7 @@ Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
 - Podświetlanie ekranu PWM z regulacją jasności
 
 ### Architektura
-- Modularna budowa: 11 niezależnych modułów C++
+- Modularna budowa: 12 niezależnych modułów C++
 - Platforma PlatformIO z frameworkiem Arduino
 - ESP32-S3 N16R8 (16MB Flash, 8MB PSRAM)
 - Biblioteki: TFT_eSPI, ESP32Encoder, ArduinoJson
